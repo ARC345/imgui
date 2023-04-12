@@ -6731,6 +6731,10 @@ void ImGui::SetNextItemSelectionData(void* item_data)
     // Note that the flag will be cleared by ItemAdd(), so it's only useful for Navigation code!
     // This designed so widgets can also cheaply set this before calling ItemAdd(), so we are not tied to MultiSelect api.
     g.NextItemData.Flags |= ImGuiNextItemDataFlags_HasSelectionData;
+
+    // Auto updating RangeSrcPassedBy for cases were clipped is not used.
+    if (g.MultiSelectState.In.RangeSrc == item_data)
+        g.MultiSelectState.In.RangeSrcPassedBy = true;
 }
 
 void ImGui::MultiSelectItemHeader(ImGuiID id, bool* p_selected)
@@ -6752,16 +6756,13 @@ void ImGui::MultiSelectItemHeader(ImGuiID id, bool* p_selected)
     else if (state->In.RequestSelectAll)
         selected = true;
 
-    const bool is_range_src = (state->In.RangeSrc == item_data);
-    if (is_range_src)
-        state->In.RangeSrcPassedBy = true; // FIXME-MULTISELECT: The promise that this would be automatically done is not because of ItemAdd() clipping.
-
     // When using SHIFT+Nav: because it can incur scrolling we cannot afford a frame of lag with the selection highlight (otherwise scrolling would happen before selection)
     // For this to work, IF the user is clipping items, they need to set RangeSrcPassedBy = true to notify the system.
     if (state->InRequestSetRangeNav)
     {
         IM_ASSERT(id != 0);
         IM_ASSERT((state->KeyMods & ImGuiMod_Shift) != 0);
+        const bool is_range_src = (state->In.RangeSrc == item_data);
         const bool is_range_dst = !state->InRangeDstPassedBy && g.NavJustMovedToId == id;     // Assume that g.NavJustMovedToId is not clipped.
         if (is_range_dst)
             state->InRangeDstPassedBy = true;
