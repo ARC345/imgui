@@ -6820,7 +6820,11 @@ void ImGui::MultiSelectItemFooter(ImGuiID id, bool* p_selected, bool* p_pressed)
         }
     }
 
-    if (pressed)
+    // Unlike Space, Enter doesn't alter selection (but can still return a press)
+    const bool enter_pressed = pressed && (g.NavActivateId == id) && (g.NavActivateFlags & ImGuiActivateFlags_PreferInput);
+
+    // Alter selection
+    if (pressed && !enter_pressed)
     {
         //-------------------------------------------------------------------------------------------------------------------------------------------------
         // ACTION                           | Begin     | Item Old        | Item New                                                   | End
@@ -6832,7 +6836,7 @@ void ImGui::MultiSelectItemFooter(ImGuiID id, bool* p_selected, bool* p_pressed)
         // Mouse Pressed, Ctrl=0, Shift=1   | n/a       | n/a             | Dst=item, Pressed -> Sel=1,   Out.Clear, Out.SetRange=1    | Clear + SetRange
         //-------------------------------------------------------------------------------------------------------------------------------------------------
 
-        ImGuiInputSource input_source = (g.NavJustMovedToId != 0 && g.NavWindow == window && g.NavJustMovedToId == g.LastItemData.ID) ? g.NavInputSource : ImGuiInputSource_Mouse;
+        ImGuiInputSource input_source = (g.NavJustMovedToId == id || g.NavActivateId == id) ? g.NavInputSource : ImGuiInputSource_Mouse;
         if (is_shift && is_multiselect)
         {
             state->Out.RequestSetRange = true;
@@ -6848,7 +6852,7 @@ void ImGui::MultiSelectItemFooter(ImGuiID id, bool* p_selected, bool* p_pressed)
             state->Out.RangeValue = selected;
         }
 
-        if (input_source == ImGuiInputSource_Mouse)
+        if (input_source == ImGuiInputSource_Mouse || g.NavActivateId == id)
         {
             // Mouse click without CTRL clears the selection, unless the clicked item is already selected
             bool preserve_existing_selection = g.DragDropActive;
